@@ -12,10 +12,10 @@
 
 #include "blowfish.h"
 
-static void test_func(int arg)
-{
-    pr_info("test function");
-}
+// static void test_func(int arg)
+// {
+//     pr_info("test function");
+// }
 
 #define CHARS_LENGTH 100
 static char mychars[CHARS_LENGTH] = "\0";
@@ -83,9 +83,9 @@ static int encrypt_bf(void)
 
     Blowfish_Init(&ctx, (unsigned char *)salt, strlen(salt));
 
-    int i;
+    int i = 0;
     unsigned long L, R = 2;
-    for (i = 0; i < strlen(plaintext); i += 8) {
+    for (i; i < strlen(plaintext); i += 8) {
         // Copy L and R
         memcpy(&L, &plaintext[i], 4);
         memcpy(&R, &plaintext[i + 4], 4);
@@ -109,4 +109,30 @@ static int encrypt_bf(void)
     pr_info("\n\n\n");
 
     return 0;
+}
+
+struct work_blowfish {
+	struct work_struct real_work;
+	int    nbr_iteration;
+};
+
+// struct work_blowfish *work_bf;
+static int work_blowfish_keep_running = 1;
+
+static void work_blowfish_handler(struct work_struct *work_arg){
+	struct work_blowfish *c_ptr = container_of(work_arg, struct work_blowfish, real_work);
+    int i = 0;
+    for (i; i<c_ptr->nbr_iteration; i++) {
+        // pr_info("Sleep")
+        printk(KERN_INFO "[Deferred work]=> PID: %d; NAME: %s\n", current->pid, current->comm);
+        // printk(KERN_INFO "[Deferred work]=> I am going to sleep 2 seconds\n");
+        encrypt_bf();
+        set_current_state(TASK_INTERRUPTIBLE);
+        schedule_timeout(2 * HZ); //Wait 2 seconds
+    }
+    // grep 'CONFIG_HZ=' /boot/config-$(uname -r)  # CONFIG_HZ=250
+	
+	printk(KERN_INFO "[Deferred work]=> DONE. BTW the iteration is: %d\n", c_ptr->nbr_iteration);
+
+	return;
 }

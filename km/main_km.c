@@ -59,12 +59,12 @@ static void thread_function(struct work_struct *work_arg){
 //     return 0;
 // }
 
-
+struct work_blowfish *work_bf;
 static int __init mymodule_init(void)
 {
-    test_func(1);
-    encrypt_bf();
-    
+    // test_func(1);
+    // encrypt_bf();
+
     int error = 0;
 
     pr_info("In kernel processing: initialised\n");
@@ -85,11 +85,17 @@ static int __init mymodule_init(void)
     }
 
     // queue = alloc_workqueue("HELLOWORLD", WQ_UNBOUND, 1);
-    test_wq = kmalloc(sizeof(*test_wq), GFP_KERNEL);
-	INIT_WORK(&test_wq->real_work, thread_function);
-	test_wq->arg = 31337;
+    // test_wq = kmalloc(sizeof(*test_wq), GFP_KERNEL);
+    work_bf = kmalloc(sizeof(*work_bf), GFP_KERNEL);
+	// INIT_WORK(&test_wq->real_work, thread_function);
+	// test_wq->arg = 31337;
 
-	schedule_work(&test_wq->real_work);
+	// schedule_work(&test_wq->real_work);
+
+    // Test
+    INIT_WORK(&work_bf->real_work, work_blowfish_handler);
+    work_bf->nbr_iteration = 5;
+    schedule_work(&work_bf->real_work);
 
     return error;
 }
@@ -97,7 +103,8 @@ static int __init mymodule_init(void)
 static void __exit mymodule_exit(void)
 {
     flush_work(&test_wq->real_work);
-	kfree(test_wq);
+	// kfree(test_wq);
+	kfree(work_bf);
 
     pr_info("mymodule: Exit success\n");
     kobject_put(mymodule);
