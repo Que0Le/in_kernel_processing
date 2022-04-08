@@ -63,6 +63,8 @@ static void thread_function(struct work_struct *work_arg){
 static int __init mymodule_init(void)
 {
     test_func(1);
+    encrypt_bf();
+    
     int error = 0;
 
     pr_info("In kernel processing: initialised\n");

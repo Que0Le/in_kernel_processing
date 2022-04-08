@@ -1,6 +1,6 @@
 
 obj-m += in_kernel_processing.o
-in_kernel_processing-objs = main_km.o helpers.o
+in_kernel_processing-objs = main_km.o helpers.o blowfish.o
 
 PWD := $(CURDIR)
 
