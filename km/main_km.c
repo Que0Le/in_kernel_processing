@@ -94,7 +94,7 @@ static int __init mymodule_init(void)
 
     // Test
     INIT_WORK(&work_bf->real_work, work_blowfish_handler);
-    work_bf->nbr_iteration = 5;
+    work_bf->nbr_iteration = 10;
     schedule_work(&work_bf->real_work);
 
     return error;
@@ -102,7 +102,7 @@ static int __init mymodule_init(void)
 
 static void __exit mymodule_exit(void)
 {
-    flush_work(&test_wq->real_work);
+    flush_work(&work_bf->real_work);
 	// kfree(test_wq);
 	kfree(work_bf);
 

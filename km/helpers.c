@@ -9,6 +9,8 @@
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/workqueue.h>
+#include <linux/preempt.h>
+#include <linux/delay.h>
 
 #include "blowfish.h"
 
@@ -101,14 +103,23 @@ static int encrypt_bf(void)
         memcpy(&decrypted[i + 4], &R, 4);
     }
 
-    pr_info("plaintext:\n%.*s\n", (int)strlen(plaintext), plaintext);
-    pr_info("---------------------------------------------------\n");
-    pr_info("encrypted:\n%.*s\n", (int)strlen(plaintext), encrypted);
-    pr_info("---------------------------------------------------\n");
-    pr_info("decrypted:\n%.*s\n", (int)strlen(plaintext), decrypted);
-    pr_info("\n\n\n");
+    // pr_info("plaintext:\n%.*s\n", (int)strlen(plaintext), plaintext);
+    // pr_info("---------------------------------------------------\n");
+    // pr_info("encrypted:\n%.*s\n", (int)strlen(plaintext), encrypted);
+    // pr_info("---------------------------------------------------\n");
+    // pr_info("decrypted:\n%.*s\n", (int)strlen(plaintext), decrypted);
+    // pr_info("\n\n\n");
 
     return 0;
+}
+
+
+static void print_is_in_task(void) {
+    if (!in_task())
+        pr_info("[in_kernel_processing] Code running in atomic or interrupt context.");
+    else {
+        pr_info("[in_kernel_processing] Code in process (or task) context.");
+    }
 }
 
 struct work_blowfish {
@@ -122,13 +133,21 @@ static int work_blowfish_keep_running = 1;
 static void work_blowfish_handler(struct work_struct *work_arg){
 	struct work_blowfish *c_ptr = container_of(work_arg, struct work_blowfish, real_work);
     int i = 0;
+    printk(KERN_INFO "[Deferred work]=> PID: %d; NAME: %s\n", current->pid, current->comm);
+    print_is_in_task();
+    unsigned long start_processing, done_processing, waked;
     for (i; i<c_ptr->nbr_iteration; i++) {
-        // pr_info("Sleep")
-        printk(KERN_INFO "[Deferred work]=> PID: %d; NAME: %s\n", current->pid, current->comm);
-        // printk(KERN_INFO "[Deferred work]=> I am going to sleep 2 seconds\n");
+        pr_alert("... processing");
+        start_processing = ktime_get_ns();
         encrypt_bf();
+        done_processing = ktime_get_ns();
         set_current_state(TASK_INTERRUPTIBLE);
-        schedule_timeout(2 * HZ); //Wait 2 seconds
+        // schedule_timeout(2 * HZ); //Wait 2 seconds
+        msleep(10);
+        waked = ktime_get_ns();
+        pr_info("start->done: %lu | done->waked: %lu", 
+                    (unsigned long)(done_processing-start_processing)/1000,
+                    (unsigned long)(waked-done_processing)/1000);
     }
     // grep 'CONFIG_HZ=' /boot/config-$(uname -r)  # CONFIG_HZ=250
 	
@@ -136,3 +155,8 @@ static void work_blowfish_handler(struct work_struct *work_arg){
 
 	return;
 }
+
+// set_current_state() changes the state of the currently executing process 
+// from TASK_RUNNING to TASK_INTERRUPTIBLE.
+// TASK_RUNNING -- A ready-to-run process has the state TASK_RUNNING.
+// TASK_INTERRUPTIBLE -- A state of the process, with which is schedule() is called, the process is moved off the run-queue.
