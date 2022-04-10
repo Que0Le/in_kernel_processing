@@ -35,6 +35,7 @@ static ssize_t mychars_store(struct kobject *kobj, struct kobj_attribute *attr,
     if (count < CHARS_LENGTH) {
         // snprintf(buf, CHARS_LENGTH, "%s", mychars);
         strncpy(mychars, buf, count);
+        mychars[count] = "\0";
     } else {
         strncpy(mychars, buf, CHARS_LENGTH - 1);
         mychars[CHARS_LENGTH] = "\0";
@@ -123,9 +124,30 @@ static void print_is_in_task(void) {
 }
 
 struct work_blowfish {
-	struct work_struct real_work;
-	int    nbr_iteration;
+    struct work_struct real_work;
+    int nbr_iteration;
+    int workloads;  // nbr of workload repeated in each iteration
+    int sleep_ms;
+    int sleep_type;
 };
+
+static void selective_sleep(int type, unsigned long value) {
+    switch(type) {
+        case 1:
+            msleep(value);
+            break;
+        case 2:
+            msleep_interruptible(value);
+            break;
+        case 3:
+            usleep_range(value*1000, (unsigned long) value*1500);
+            break;
+        default:
+            msleep(value);
+    } 
+}
+
+static int keep_running = 1;
 
 // struct work_blowfish *work_bf;
 static int work_blowfish_keep_running = 1;
@@ -137,13 +159,19 @@ static void work_blowfish_handler(struct work_struct *work_arg){
     print_is_in_task();
     unsigned long start_processing, done_processing, waked;
     for (i; i<c_ptr->nbr_iteration; i++) {
+        if (keep_running != 1) {
+            pr_alert("Break by keep_running = %d!", keep_running);
+            break;
+        }
         pr_alert("... processing");
         start_processing = ktime_get_ns();
-        encrypt_bf();
+        int j=0;
+        for (j=0; j<c_ptr->workloads; j++)
+            encrypt_bf();
         done_processing = ktime_get_ns();
         set_current_state(TASK_INTERRUPTIBLE);
         // schedule_timeout(2 * HZ); //Wait 2 seconds
-        msleep(10);
+        selective_sleep(c_ptr->sleep_type, c_ptr->sleep_ms);
         waked = ktime_get_ns();
         pr_info("start->done: %lu | done->waked: %lu", 
                     (unsigned long)(done_processing-start_processing)/1000,

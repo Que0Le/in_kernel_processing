@@ -95,6 +95,7 @@ static int __init mymodule_init(void)
     // Test
     INIT_WORK(&work_bf->real_work, work_blowfish_handler);
     work_bf->nbr_iteration = 10;
+    work_bf->workloads = 20;
     schedule_work(&work_bf->real_work);
 
     return error;
