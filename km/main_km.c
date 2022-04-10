@@ -59,7 +59,6 @@ static void thread_function(struct work_struct *work_arg){
 //     return 0;
 // }
 
-struct work_blowfish *work_bf;
 static int __init mymodule_init(void)
 {
     // test_func(1);
@@ -93,10 +92,10 @@ static int __init mymodule_init(void)
 	// schedule_work(&test_wq->real_work);
 
     // Test
-    INIT_WORK(&work_bf->real_work, work_blowfish_handler);
-    work_bf->nbr_iteration = 10;
-    work_bf->workloads = 20;
-    schedule_work(&work_bf->real_work);
+    // INIT_WORK(&work_bf->real_work, work_blowfish_handler);
+    // work_bf->nbr_iteration = 10;
+    // work_bf->workloads = 20;
+    // schedule_work(&work_bf->real_work);
 
     return error;
 }
