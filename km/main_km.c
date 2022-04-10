@@ -61,9 +61,6 @@ static void thread_function(struct work_struct *work_arg){
 
 static int __init mymodule_init(void)
 {
-    // test_func(1);
-    // encrypt_bf();
-
     int error = 0;
 
     pr_info("In kernel processing: initialised\n");
@@ -83,19 +80,15 @@ static int __init mymodule_init(void)
                 "in /sys/kernel/mymodule\n");
     }
 
-    // queue = alloc_workqueue("HELLOWORLD", WQ_UNBOUND, 1);
-    // test_wq = kmalloc(sizeof(*test_wq), GFP_KERNEL);
     work_bf = kmalloc(sizeof(*work_bf), GFP_KERNEL);
+
+    // Create a testing work
 	INIT_WORK(&work_bf->real_work, test_work_handler);
-	// test_wq->arg = 31337;
-
+	work_bf->sleep_ms = 1;
+	work_bf->sleep_type = 1;
+	work_bf->nbr_iteration = 1;
+	work_bf->workloads = 1;
 	schedule_work(&work_bf->real_work);
-
-    // Test
-    // INIT_WORK(&work_bf->real_work, work_blowfish_handler);
-    // work_bf->nbr_iteration = 10;
-    // work_bf->workloads = 20;
-    // schedule_work(&work_bf->real_work);
 
     return error;
 }

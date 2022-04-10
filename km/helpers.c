@@ -118,13 +118,14 @@ static void selective_sleep(int type, unsigned long value) {
 }
 
 
-// struct work_blowfish *work_bf;
-static int work_blowfish_keep_running = 1;
-
 static void test_work_handler(struct work_struct *work_arg) {
-    struct work_blowfish *c_ptr = container_of(work_arg, struct work_blowfish, real_work);
+	struct work_blowfish *c_ptr = container_of(work_arg, struct work_blowfish, real_work);
     work_running = 1;
-    printk(KERN_INFO "Testing work done.");
+    printk(KERN_INFO "Testing done: PID: %d; NAME: %s | work_blowfish: %d %d %d %d\n", 
+                current->pid, current->comm,
+                work_bf->sleep_type, work_bf->sleep_ms, 
+                work_bf->nbr_iteration, work_bf->workloads
+    );
     work_running = 0;
     return;
 }
@@ -135,7 +136,7 @@ static void work_blowfish_handler(struct work_struct *work_arg){
     work_running = 1;
     printk(KERN_INFO "[Deferred work]=> PID: %d; NAME: %s\n", current->pid, current->comm);
     // printk(KERN_INFO "[Deferred work]=> PID: %d; NAME: %s\n", current->pid, current->comm);
-    print_is_in_task();
+    // print_is_in_task();
     unsigned long start_processing, done_processing, waked;
     for (i=0; i<c_ptr->nbr_iteration; i++) {
         int j;
@@ -214,30 +215,30 @@ static int mychars_store(struct kobject *kobj, struct kobj_attribute *attr,
     //
     input_to_work(buf, count, work_bf);
     pr_alert("%d %d %d %d\n", work_bf->sleep_type, work_bf->sleep_ms, work_bf->nbr_iteration, work_bf->workloads);
-    // if (keep_running == 1)
-    //     keep_running = 0;
-    // int try = 5;
-    // while(try > 0) {
-    //     try -= 1;
-    //     if (work_running == 1) {
-    //         pr_info("Old work still running. Waiting ...");
-    //         msleep(500);
-    //     } else {
-    //         break;
-    //     }
-    //     if (try == 0) {
-    //         pr_alert("Can't add new work: running work didn't stop after 5 tries!");
-    //         return -1;
-    //     }
-    // }
+    if (work_running == 1 && keep_running == 1)
+        keep_running = 0;
+    int try = 5;
+    while(try > 0) {
+        try -= 1;
+        if (work_running == 1) {
+            pr_info("Old work still running. Waiting ...");
+            msleep(500);
+        } else {
+            break;
+        }
+        if (try == 0) {
+            pr_alert("Can't add new work: running work didn't stop after 5 tries!");
+            return -1;
+        }
+    }
     // // Add work
-    // INIT_WORK(&work_bf->real_work, work_blowfish_handler);
+    INIT_WORK(&work_bf->real_work, work_blowfish_handler);
     // work_bf->nbr_iteration = 10;
     // work_bf->workloads = 20;
     // work_bf->sleep_type = 1;
     // work_bf->sleep_ms = 100;
-    // keep_running = 1;
-    // schedule_work(&work_bf->real_work);
+    keep_running = 1;
+    schedule_work(&work_bf->real_work);
 
     return count;
 }
