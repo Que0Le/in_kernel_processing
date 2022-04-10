@@ -121,6 +121,14 @@ static void selective_sleep(int type, unsigned long value) {
 // struct work_blowfish *work_bf;
 static int work_blowfish_keep_running = 1;
 
+static void test_work_handler(struct work_struct *work_arg) {
+    struct work_blowfish *c_ptr = container_of(work_arg, struct work_blowfish, real_work);
+    work_running = 1;
+    printk(KERN_INFO "Testing work done.");
+    work_running = 0;
+    return;
+}
+
 static void work_blowfish_handler(struct work_struct *work_arg){
     int i;
 	struct work_blowfish *c_ptr = container_of(work_arg, struct work_blowfish, real_work);
@@ -160,6 +168,27 @@ static void work_blowfish_handler(struct work_struct *work_arg){
 // TASK_RUNNING -- A ready-to-run process has the state TASK_RUNNING.
 // TASK_INTERRUPTIBLE -- A state of the process, with which is schedule() is called, the process is moved off the run-queue.
 
+static void input_to_work(char *text, size_t count, struct work_blowfish *work_bf) {
+    // int iteration, sleep_style, workload;
+    char buffs[4][10];
+    memset(buffs, '\0', 4*10);
+
+    int current_read = 0;
+    int current_begin = 0;
+    int i;
+    for (i=0; i<count; i++) {
+        if (text[i] == ',' || i == count-1) {
+            memcpy(&buffs[current_read], &text[current_begin], i - current_begin);
+            // printf("current_read=%d: %s\n", current_read, buffs[current_read]);
+            current_begin = i+1;
+            current_read += 1;
+        }
+    }
+    sscanf(buffs[0], "%d", &work_bf->sleep_type);
+    sscanf(buffs[1], "%d", &work_bf->sleep_ms);
+    sscanf(buffs[2], "%d", &work_bf->nbr_iteration);
+    sscanf(buffs[3], "%d", &work_bf->workloads);
+}
 
 #define CHARS_LENGTH 100
 static char mychars[CHARS_LENGTH] = "\0";
@@ -183,30 +212,32 @@ static int mychars_store(struct kobject *kobj, struct kobj_attribute *attr,
         mychars[CHARS_LENGTH] = "\0";
     }
     //
-    if (keep_running == 1)
-        keep_running = 0;
-    int try = 5;
-    while(try > 0) {
-        try -= 1;
-        if (work_running == 1) {
-            pr_info("Old work still running. Waiting ...");
-            msleep(500);
-        } else {
-            break;
-        }
-        if (try == 0) {
-            pr_alert("Can't add new work: running work didn't stop after 5 tries!");
-            return -1;
-        }
-    }
-    // Add work
-    INIT_WORK(&work_bf->real_work, work_blowfish_handler);
-    work_bf->nbr_iteration = 10;
-    work_bf->workloads = 20;
-    work_bf->sleep_type = 1;
-    work_bf->sleep_ms = 100;
-    keep_running = 1;
-    schedule_work(&work_bf->real_work);
+    input_to_work(buf, count, work_bf);
+    pr_alert("%d %d %d %d\n", work_bf->sleep_type, work_bf->sleep_ms, work_bf->nbr_iteration, work_bf->workloads);
+    // if (keep_running == 1)
+    //     keep_running = 0;
+    // int try = 5;
+    // while(try > 0) {
+    //     try -= 1;
+    //     if (work_running == 1) {
+    //         pr_info("Old work still running. Waiting ...");
+    //         msleep(500);
+    //     } else {
+    //         break;
+    //     }
+    //     if (try == 0) {
+    //         pr_alert("Can't add new work: running work didn't stop after 5 tries!");
+    //         return -1;
+    //     }
+    // }
+    // // Add work
+    // INIT_WORK(&work_bf->real_work, work_blowfish_handler);
+    // work_bf->nbr_iteration = 10;
+    // work_bf->workloads = 20;
+    // work_bf->sleep_type = 1;
+    // work_bf->sleep_ms = 100;
+    // keep_running = 1;
+    // schedule_work(&work_bf->real_work);
 
     return count;
 }

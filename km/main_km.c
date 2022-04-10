@@ -86,10 +86,10 @@ static int __init mymodule_init(void)
     // queue = alloc_workqueue("HELLOWORLD", WQ_UNBOUND, 1);
     // test_wq = kmalloc(sizeof(*test_wq), GFP_KERNEL);
     work_bf = kmalloc(sizeof(*work_bf), GFP_KERNEL);
-	// INIT_WORK(&test_wq->real_work, thread_function);
+	INIT_WORK(&work_bf->real_work, test_work_handler);
 	// test_wq->arg = 31337;
 
-	// schedule_work(&test_wq->real_work);
+	schedule_work(&work_bf->real_work);
 
     // Test
     // INIT_WORK(&work_bf->real_work, work_blowfish_handler);
