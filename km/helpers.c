@@ -13,7 +13,7 @@
 #include <linux/delay.h>
 
 #include "blowfish.h"
-
+#include "helpers.h"
 
 static int keep_running = 1;
 static int work_running = 0;
@@ -58,6 +58,8 @@ static struct kobj_attribute myvariable_attribute =
 
 static int encrypt_bf(void)
 {
+    BLOWFISH_CTX ctx;
+    int i;
     char plaintext[] =
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
 
@@ -66,12 +68,10 @@ static int encrypt_bf(void)
     char decrypted[strlen(plaintext)];
     memset(decrypted, '\0', (int)strlen(plaintext));
 
-    BLOWFISH_CTX ctx;
     char salt[] = "TESTKEY";
 
     Blowfish_Init(&ctx, (unsigned char *)salt, strlen(salt));
 
-    int i;
     unsigned long L, R = 2;
     for (i = 0; i < strlen(plaintext); i += 8) {
         // Copy L and R

@@ -1,7 +1,6 @@
 {
     "files.associations": {
-        "fs.h": "c",
-        "types.h": "c",
+        "module.h": "c",
         "workqueue.h": "c"
     }
 }
