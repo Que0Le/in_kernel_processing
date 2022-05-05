@@ -63,10 +63,10 @@ static int encrypt_bf(void)
     char plaintext[] =
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
 
-    char encrypted[strlen(plaintext)];
-    memset(encrypted, '\0', (int)strlen(plaintext));
-    char decrypted[strlen(plaintext)];
-    memset(decrypted, '\0', (int)strlen(plaintext));
+    char encrypted[strlen(plaintext) + 1];
+    memset(encrypted, '\0', (int)strlen(plaintext) + 1);
+    char decrypted[strlen(plaintext) + 1];
+    memset(decrypted, '\0', (int)strlen(plaintext) + 1);
 
     char salt[] = "TESTKEY";
 
