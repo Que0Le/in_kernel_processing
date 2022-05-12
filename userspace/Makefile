@@ -11,5 +11,8 @@ ccflags-y := \
 INC_DIR = ./
 
 
-c:
-	gcc -Wall main.c helper.c blowfish.c -o us_app
+us:
+	gcc -Wall main.c helper.c blowfish.c -o us -lpthread
+
+test:
+	gcc -Wall test.c helper.c blowfish.c -o test -lpthread
