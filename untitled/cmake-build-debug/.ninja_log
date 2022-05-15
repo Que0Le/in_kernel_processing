@@ -1,0 +1,9 @@
+# ninja log v5
+1	25	1652622231940623357	CMakeFiles/untitled.dir/helper.c.o	96ad6bbbbffa165f
+0	27	1652622231944623357	CMakeFiles/untitled.dir/main.c.o	a0ab999d10ca6923
+2	24	1652355048037163377	CMakeFiles/untitled.dir/blowfish.c.o	3e16ec6111286df7
+27	40	1652622231956623361	untitled	d802e0132e1dd497
+0	23	1652622380092636706	CMakeFiles/untitled.dir/helper.c.o	cf793bf7a62758c5
+0	25	1652622380092636706	CMakeFiles/untitled.dir/blowfish.c.o	b9bc825944014ceb
+0	31	1652622380100636705	CMakeFiles/untitled.dir/main.c.o	d24cf87a0acee5e6
+31	44	1652622380112636705	untitled	d802e0132e1dd497

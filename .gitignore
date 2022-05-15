@@ -3,5 +3,6 @@
 **.mod
 **.mod.c
 **.o
+**.o.d
 km/Module.symvers
 km/modules.order
