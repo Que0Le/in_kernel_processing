@@ -8,22 +8,39 @@
 #include "blowfish.h"
 #include "helper.h"
 
-void intHandler(int dummy)
-{
+void intHandler(int dummy) {
     keepRunning = 0;
 }
 
-void print_usage()
-{
+void print_usage() {
     printf("Usage: -r 100 -s 100 -t 100000 -u 1\n");
 }
 
-unsigned long get_nsecs(void)
-{
+unsigned long get_nsecs(void) {
     struct timespec ts;
 
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return ts.tv_sec * 1000000000UL + ts.tv_nsec;
+}
+
+unsigned long print_progress(
+        unsigned long total_iteration,
+        unsigned long current_iteration,
+        unsigned long next_ite_to_print)
+{
+    if (current_iteration == 0 && next_ite_to_print == 0) {
+        printf("processing 0/100 ...\n");
+        return 10;
+    }
+    if (current_iteration == (total_iteration - 1)) {
+        printf("processed 100/100!\n");
+        return 100;
+    }
+    if ((unsigned long) (total_iteration * next_ite_to_print / 100) == (current_iteration + 10)) {
+        printf("processing %lu/100 ...\n", next_ite_to_print);
+        return next_ite_to_print + 10;
+    }
+    return next_ite_to_print;
 }
 
 int encrypt_bf(void) {
@@ -33,13 +50,13 @@ int encrypt_bf(void) {
             "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
 
     char encrypted[strlen(plaintext) + 1];
-    memset(encrypted, '\0', (int)strlen(plaintext) + 1);
+    memset(encrypted, '\0', (int) strlen(plaintext) + 1);
     char decrypted[strlen(plaintext) + 1];
-    memset(decrypted, '\0', (int)strlen(plaintext) + 1);
+    memset(decrypted, '\0', (int) strlen(plaintext) + 1);
 
     char salt[] = "TESTKEY";
 
-    Blowfish_Init(&ctx, (unsigned char *)salt, strlen(salt));
+    Blowfish_Init(&ctx, (unsigned char *) salt, strlen(salt));
 
     unsigned long L, R = 2;
     for (i = 0; i < strlen(plaintext); i += 8) {

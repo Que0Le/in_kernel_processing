@@ -21,29 +21,7 @@ unsigned long sleep_time = 30000;
 unsigned int num_threads = 7;
 unsigned int update_rate = 3;
 
-//static volatile int keepRunning = 1;
-//static volatile int threadHasTerminated = 0;
-
-//void intHandler(int dummy)
-//{
-//    keepRunning = 0;
-//}
-//
-//void print_usage()
-//{
-//    printf("Usage: -r 100 -s 100 -t 100000 -u 1\n");
-//}
-//
-//static unsigned long get_nsecs(void)
-//{
-//    struct timespec ts;
-//
-//    clock_gettime(CLOCK_MONOTONIC, &ts);
-//    return ts.tv_sec * 1000000000UL + ts.tv_nsec;
-//}
-
-struct args2
-{
+struct args2 {
     int id;
     int policy;
     int priority_value; // 1-99 for realtime policies RR and FIFO
@@ -61,25 +39,24 @@ struct args2
     int done;
 };
 
-void *task_process(void *input)
-{
+void *task_process(void *input) {
     struct timespec ts_requested;
     struct timespec ts_remaining;
     unsigned long start_encrypt = 0;
     unsigned long done_encrypt = 0;
     unsigned long waked = 0;
     int return_code;
-    //int id = ((struct args2 *)input)->id;
-    unsigned long t_size = ((struct args2 *)input)->task_size;
-    unsigned long t_repeat = ((struct args2 *)input)->task_repeat;
-    ts_requested.tv_sec = ((struct args2 *)input)->NANO_TIME_SLEEP / 1000000000UL;
-    ts_requested.tv_nsec = ((struct args2 *)input)->NANO_TIME_SLEEP % 1000000000UL;
 
-    for (int k = 1; k <= t_size; k++)
-    {
-        for (int j=0; j<t_repeat; j++) {
-            if (keepRunning)
-            {
+    unsigned long t_size = ((struct args2 *) input)->task_size;
+    unsigned long t_repeat = ((struct args2 *) input)->task_repeat;
+
+    ts_requested.tv_sec = ((struct args2 *) input)->NANO_TIME_SLEEP / 1000000000UL;
+    ts_requested.tv_nsec = ((struct args2 *) input)->NANO_TIME_SLEEP % 1000000000UL;
+
+    for (int k = 1; k <= t_repeat; k++) {
+        ((struct args2 *) input)->current_progress += 1;
+        for (int j = 0; j < t_size; j++) {
+            if (keepRunning) {
                 start_encrypt = get_nsecs();
                 encrypt_bf();
                 done_encrypt = get_nsecs();
@@ -117,28 +94,26 @@ void *task_process(void *input)
         ((struct args2 *) input)->COUNT_TASK_PROCESSING += 1;
         ((struct args2 *) input)->SUM_TIME_SLEEP += waked - done_encrypt;
         ((struct args2 *) input)->COUNT_SLEEP += 1;
+
     }
-    ((struct args2 *)input)->done = 1;
+    ((struct args2 *) input)->done = 1;
     pthread_exit(NULL);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     int opt = 0;
     static struct option long_options[] = {
             {"task_repeat", optional_argument, 0, 'r'},
-            {"task_size", optional_argument, 0, 's'},
-            {"sleep_time", optional_argument, 0, 't'},
+            {"task_size",   optional_argument, 0, 's'},
+            {"sleep_time",  optional_argument, 0, 't'},
             {"update_rate", optional_argument, 0, 'u'},
-            {0, 0, 0, 0}};
+            {0, 0,                             0, 0}};
 
     int long_index = 0;
 
     while ((opt = getopt_long(argc, argv, "r:s:t:u:",
-                              long_options, &long_index)) != -1)
-    {
-        switch (opt)
-        {
+                              long_options, &long_index)) != -1) {
+        switch (opt) {
             case 'r':
                 task_repeat = atoi(optarg);
                 break;
@@ -163,7 +138,7 @@ int main(int argc, char *argv[])
     pthread_attr_t attr;
 
     /* create  the param*/
-    param = (struct args2 *)malloc(sizeof(struct args2));
+    param = (struct args2 *) malloc(sizeof(struct args2));
     param->id = 0;
     param->task_size = task_size;
     param->task_repeat = task_repeat;
@@ -185,12 +160,26 @@ int main(int argc, char *argv[])
     pthread_create(&tid, NULL, task_process, param);
 //    signal(SIGINT, intHandler);
 
+    unsigned long next_ite_to_print = 0;
+    while (param->done == 0 && next_ite_to_print <= 100) {
+        next_ite_to_print = print_progress(
+                task_repeat,
+                param->current_progress, next_ite_to_print
+        );
+        if (next_ite_to_print > 100)
+            break;
+        usleep(100);
+    }
+
+
     pthread_join(tid, NULL);
-    printf("AVG Processing time  : %f\n", (double) param->SUM_TIME_TASK_PROCESSING / param->COUNT_TASK_PROCESSING);
+    printf("AVG Processing time  : %f\n",
+           (double) param->SUM_TIME_TASK_PROCESSING / param->COUNT_TASK_PROCESSING
+    );
     printf("AVG Sleep time       : %f = x%f of input\n",
            (double) param->SUM_TIME_SLEEP / param->COUNT_SLEEP,
-           (double) (param->SUM_TIME_SLEEP / param->COUNT_SLEEP)/param->NANO_TIME_SLEEP
-           );
+           (double) (param->SUM_TIME_SLEEP / param->COUNT_SLEEP) / param->NANO_TIME_SLEEP
+    );
     printf("Sleep time requested : %lul\n", param->NANO_TIME_SLEEP);
     free(param);
 

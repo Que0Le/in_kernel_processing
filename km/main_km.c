@@ -84,7 +84,7 @@ static int __init mymodule_init(void)
 
     // Create a testing work
 	INIT_WORK(&work_bf->real_work, test_work_handler);
-	work_bf->sleep_ms = 1;
+	work_bf->sleep_usec = 1;
 	work_bf->sleep_type = 1;
 	work_bf->nbr_iteration = 1;
 	work_bf->workloads = 1;
