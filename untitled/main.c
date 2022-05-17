@@ -17,7 +17,7 @@
 
 unsigned long task_repeat = 10000;
 unsigned long task_size = 30000;
-unsigned long sleep_time = 30000;
+unsigned long sleep_time_usec = 30000;
 unsigned int num_threads = 7;
 unsigned int update_rate = 3;
 
@@ -50,7 +50,7 @@ void *task_process(void *input) {
     unsigned long t_size = ((struct args2 *) input)->task_size;
     unsigned long t_repeat = ((struct args2 *) input)->task_repeat;
 
-    ts_requested.tv_sec = ((struct args2 *) input)->NANO_TIME_SLEEP / 1000000000UL;
+    ts_requested.tv_sec  = ((struct args2 *) input)->NANO_TIME_SLEEP / 1000000000UL;
     ts_requested.tv_nsec = ((struct args2 *) input)->NANO_TIME_SLEEP % 1000000000UL;
 
     for (int k = 1; k <= t_repeat; k++) {
@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
     static struct option long_options[] = {
             {"task_repeat", optional_argument, 0, 'r'},
             {"task_size",   optional_argument, 0, 's'},
-            {"sleep_time",  optional_argument, 0, 't'},
+            {"sleep_time_usec",  optional_argument, 0, 't'},
             {"update_rate", optional_argument, 0, 'u'},
             {0, 0,                             0, 0}};
 
@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
                 task_size = atoi(optarg);
                 break;
             case 't':
-                sleep_time = atoi(optarg);
+                sleep_time_usec = atoi(optarg);
                 break;
             case 'u':
                 update_rate = atoi(optarg);
@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
     param->current_progress = 0;
     param->done = 0;
     param->sum_time_to_current_process = 0;
-    param->NANO_TIME_SLEEP = sleep_time;
+    param->NANO_TIME_SLEEP = sleep_time_usec * 1000;
 
     struct sched_param sch_param;
     if (pthread_attr_setschedpolicy(&attr, SCHED_RR) != 0)

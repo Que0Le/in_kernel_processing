@@ -25,8 +25,8 @@ static unsigned long COUNT_TASK_PROCESSING = 0;
 
 struct work_blowfish {
     struct work_struct real_work;
-    int nbr_iteration;
-    int workloads;  // nbr of workload repeated in each iteration
+    int task_repeat;
+    int task_size;  // nbr of workload repeated in each iteration
     int sleep_usec;
     int sleep_type;
 };
@@ -128,17 +128,39 @@ static void test_work_handler(struct work_struct *work_arg) {
     printk(KERN_INFO "Testing done: PID: %d; NAME: %s | work_blowfish: %d %d %d %d\n", 
                 current->pid, current->comm,
                 work_bf->sleep_type, work_bf->sleep_usec, 
-                work_bf->nbr_iteration, work_bf->workloads
+                work_bf->task_repeat, work_bf->task_size
     );
     work_running = 0;
     return;
 }
+
+static unsigned long print_progress(
+        unsigned long total_iteration,
+        unsigned long current_iteration,
+        unsigned long next_ite_to_print)
+{
+    if (current_iteration == 0 && next_ite_to_print == 0) {
+        pr_alert("processing 0/100 ...\n");
+        return 10;
+    }
+    if (current_iteration == (total_iteration - 1)) {
+        pr_alert("processed 100/100!\n");
+        return 100;
+    }
+    if ((unsigned long) (total_iteration * next_ite_to_print / 100) == (current_iteration + 10)) {
+        pr_alert("processing %lu/100 ...\n", next_ite_to_print);
+        return next_ite_to_print + 10;
+    }
+    return next_ite_to_print;
+}
+
 
 static void work_blowfish_handler(struct work_struct *work_arg) {
     SUM_TIME_SLEEP = 0;
     COUNT_SLEEP = 0;
     SUM_TIME_TASK_PROCESSING = 0;
     COUNT_TASK_PROCESSING = 0;
+    unsigned long next_ite_to_print = 0;
     int i;
 	struct work_blowfish *c_ptr = container_of(work_arg, struct work_blowfish, real_work);
     work_running = 1;
@@ -147,14 +169,14 @@ static void work_blowfish_handler(struct work_struct *work_arg) {
     // print_is_in_task();
     unsigned long start_processing, done_processing, waked;
     pr_alert("... processing");
-    for (i=0; i<c_ptr->nbr_iteration; i++) {
+    for (i=0; i<c_ptr->task_repeat; i++) {
         int j;
         if (keep_running != 1) {
             pr_alert("Break by keep_running = %d!", keep_running);
             break;
         }
         start_processing = ktime_get_ns();
-        for (j=0; j<c_ptr->workloads; j++)
+        for (j=0; j<c_ptr->task_size; j++)
             encrypt_bf();
         done_processing = ktime_get_ns();
         set_current_state(TASK_INTERRUPTIBLE);
@@ -167,7 +189,9 @@ static void work_blowfish_handler(struct work_struct *work_arg) {
         COUNT_TASK_PROCESSING += 1;
         SUM_TIME_TASK_PROCESSING += done_processing-start_processing;
         COUNT_SLEEP += 1;
-        SUM_TIME_SLEEP += waked-done_processing;        
+        SUM_TIME_SLEEP += waked-done_processing;
+        next_ite_to_print = print_progress(c_ptr->task_repeat, i, next_ite_to_print);
+              
     }
     // grep 'CONFIG_HZ=' /boot/config-$(uname -r)  # CONFIG_HZ=250
 
@@ -176,7 +200,7 @@ static void work_blowfish_handler(struct work_struct *work_arg) {
             (unsigned long) SUM_TIME_SLEEP / COUNT_SLEEP,
             (unsigned long) (SUM_TIME_SLEEP / COUNT_SLEEP)/(c_ptr->sleep_usec*1000),
             (unsigned long) (SUM_TIME_SLEEP / COUNT_SLEEP)%(c_ptr->sleep_usec*1000));
-	printk(KERN_INFO "[Deferred work]=> DONE. BTW the run iteration is: %d/%d\n", i, c_ptr->nbr_iteration);
+	printk(KERN_INFO "[Deferred work]=> DONE. BTW the run iteration is: %d/%d\n", i, c_ptr->task_repeat);
     work_running = 0;
 	return;
 }
@@ -204,8 +228,8 @@ static void input_to_work(char *text, size_t count, struct work_blowfish *work_b
     }
     sscanf(buffs[0], "%d", &work_bf->sleep_type);
     sscanf(buffs[1], "%d", &work_bf->sleep_usec);
-    sscanf(buffs[2], "%d", &work_bf->nbr_iteration);
-    sscanf(buffs[3], "%d", &work_bf->workloads);
+    sscanf(buffs[2], "%d", &work_bf->task_repeat);
+    sscanf(buffs[3], "%d", &work_bf->task_size);
 }
 
 #define CHARS_LENGTH 100
@@ -231,7 +255,7 @@ static int mychars_store(struct kobject *kobj, struct kobj_attribute *attr,
     }
     //
     input_to_work(buf, count, work_bf);
-    pr_alert("%d %d %d %d\n", work_bf->sleep_type, work_bf->sleep_usec, work_bf->nbr_iteration, work_bf->workloads);
+    pr_alert("%d %d %d %d\n", work_bf->sleep_type, work_bf->sleep_usec, work_bf->task_repeat, work_bf->task_size);
     if (work_running == 1 && keep_running == 1)
         keep_running = 0;
     int try = 5;

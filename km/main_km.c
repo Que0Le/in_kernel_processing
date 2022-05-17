@@ -40,25 +40,6 @@ static void thread_function(struct work_struct *work_arg){
 	return;
 }
 
-// static void work_handler(struct work_struct *data)
-// {
-//     pr_info("work handler function.\n");
-// }
-
-// static int sched_init(void)
-// {
-//     queue = alloc_workqueue("HELLOWORLD", WQ_UNBOUND, 1);
-//     INIT_WORK(&work, work_handler);
-//     schedule_work(&work);
-//     return 0;
-// }
-
-// static int sched_exit(void)
-// {
-//     destroy_workqueue(queue);
-//     return 0;
-// }
-
 static int __init mymodule_init(void)
 {
     int error = 0;
@@ -86,8 +67,8 @@ static int __init mymodule_init(void)
 	INIT_WORK(&work_bf->real_work, test_work_handler);
 	work_bf->sleep_usec = 1;
 	work_bf->sleep_type = 1;
-	work_bf->nbr_iteration = 1;
-	work_bf->workloads = 1;
+	work_bf->task_repeat = 1;
+	work_bf->task_size = 1;
 	schedule_work(&work_bf->real_work);
 
     return error;
