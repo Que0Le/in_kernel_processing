@@ -20,6 +20,7 @@ unsigned long task_size = 30000;
 unsigned long sleep_time_usec = 30000;
 unsigned int num_threads = 7;
 unsigned int update_rate = 3;
+int policy = 0;
 
 struct args2 {
     int id;
@@ -105,11 +106,12 @@ int main(int argc, char *argv[]) {
             {"task_size",   optional_argument, 0, 's'},
             {"sleep_time_usec",  optional_argument, 0, 't'},
             {"update_rate", optional_argument, 0, 'u'},
+            {"policy", optional_argument, 0, 'p'},
             {0, 0,                             0, 0}};
 
     int long_index = 0;
 
-    while ((opt = getopt_long(argc, argv, "r:s:t:u:",
+    while ((opt = getopt_long(argc, argv, "r:s:t:u:p:",
                               long_options, &long_index)) != -1) {
         switch (opt) {
             case 'r':
@@ -124,18 +126,17 @@ int main(int argc, char *argv[]) {
             case 'u':
                 update_rate = atoi(optarg);
                 break;
+            case 'p':
+                policy = atoi(optarg);
+                break;
             default:
                 print_usage();
                 exit(EXIT_FAILURE);
         }
     }
 
-    int policy;
-    struct args2 *param;
-    pthread_t tid;
-    pthread_attr_t attr;
-
     /* create  the param*/
+    struct args2 *param;
     param = (struct args2 *) malloc(sizeof(struct args2));
     param->id = 0;
     param->task_size = task_size;
@@ -146,16 +147,33 @@ int main(int argc, char *argv[]) {
     param->sum_time_to_current_process = 0;
     param->NANO_TIME_SLEEP = sleep_time_usec * 1000;
 
-    struct sched_param sch_param;
-    if (pthread_attr_setschedpolicy(&attr, SCHED_RR) != 0)
-        fprintf(stderr, "Unable to set policy.\n");
-    sch_param.sched_priority = 99;
-    if (pthread_attr_setschedparam(&attr, &sch_param) != 0)
-        fprintf(stderr, "Unable to set priority.\n");
-    param->policy = SCHED_RR;
-    param->priority_value = sch_param.sched_priority;
+    pthread_t tid;
+    /*
+     * #define SCHED_OTHER		0
+     * #define SCHED_FIFO		1
+     * #define SCHED_RR		2
+     */
+    pthread_attr_t attr;
 
-    pthread_create(&tid, NULL, task_process, param);
+    pthread_attr_init(&attr);
+
+
+    if(pthread_attr_setschedpolicy(&attr, policy) != 0) {
+        fprintf(stderr, "Unable to set policy.\n");
+    }
+    if(pthread_attr_getschedpolicy(&attr, &policy) != 0)
+        fprintf(stderr, "Unable to get policy.\n");
+    else{
+        if(policy == SCHED_OTHER)
+            printf("SCHED_OTHER\n");
+        else if(policy == SCHED_RR)
+            printf("SCHED_RR\n");
+        else if(policy == SCHED_FIFO)
+            printf("SCHED_FIFO\n");
+    }
+//    param->policy = SCHED_RR;
+
+    pthread_create(&tid, &attr, task_process, param);
 //    signal(SIGINT, intHandler);
 
     unsigned long next_ite_to_print = 0;
