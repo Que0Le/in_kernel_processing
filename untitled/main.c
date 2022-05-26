@@ -54,47 +54,45 @@ void *task_process(void *input) {
     ts_requested.tv_nsec = ((struct args2 *) input)->NANO_TIME_SLEEP % 1000000000UL;
 
     for (int k = 1; k <= t_repeat; k++) {
+        if (keepRunning != 1) {
+            printf("Break by keepRunning = %d!", keepRunning);
+            break;
+        }
         ((struct args2 *) input)->current_progress += 1;
+        start_encrypt = get_nsecs();
         for (int j = 0; j < t_size; j++) {
-            if (keepRunning) {
-                start_encrypt = get_nsecs();
-                encrypt_bf();
-                done_encrypt = get_nsecs();
-
-                return_code = clock_nanosleep(CLOCK_MONOTONIC, 0, &ts_requested, &ts_remaining);
-                waked = get_nsecs();;
-                if (return_code != 0) {
-                    ((struct args2 *) input)->failure_sleep++;
-                    printf("`clock_nanosleep()` failed! return_code = %i: ", return_code);
-                    // See all error codes here: https://man7.org/linux/man-pages/man2/clock_nanosleep.2.html
-                    switch (return_code) {
-                        case EFAULT:
-                            printf("EFAULT: `request` or `remain` specified an invalid address.\n");
-                            break;
-                        case EINTR:
-                            printf("EINTR: The sleep was interrupted by a signal handler.\n");
-                            break;
-                        case EINVAL:
-                            printf("EINVAL: The value in the `tv_nsec` field was not in the range 0 to "
-                                   "999999999 or `tv_sec` was negative.\n");
-                            break;
-                        case ENOTSUP:
-                            printf("ENOTSUP: The kernel does not support sleeping against this `clockid`.\n");
-                            break;
-                        default:
-                            printf("Default\n");
-                            break;
-                    }
-                }
-            } else {
-                break;
+            encrypt_bf();
+        }
+        done_encrypt = get_nsecs();
+        return_code = clock_nanosleep(CLOCK_MONOTONIC, 0, &ts_requested, &ts_remaining);
+        waked = get_nsecs();;
+        if (return_code != 0) {
+            ((struct args2 *) input)->failure_sleep++;
+            printf("`clock_nanosleep()` failed! return_code = %i: ", return_code);
+            // See all error codes here: https://man7.org/linux/man-pages/man2/clock_nanosleep.2.html
+            switch (return_code) {
+                case EFAULT:
+                    printf("EFAULT: `request` or `remain` specified an invalid address.\n");
+                    break;
+                case EINTR:
+                    printf("EINTR: The sleep was interrupted by a signal handler.\n");
+                    break;
+                case EINVAL:
+                    printf("EINVAL: The value in the `tv_nsec` field was not in the range 0 to "
+                           "999999999 or `tv_sec` was negative.\n");
+                    break;
+                case ENOTSUP:
+                    printf("ENOTSUP: The kernel does not support sleeping against this `clockid`.\n");
+                    break;
+                default:
+                    printf("Default\n");
+                    break;
             }
         }
         ((struct args2 *) input)->SUM_TIME_TASK_PROCESSING += done_encrypt - start_encrypt;
         ((struct args2 *) input)->COUNT_TASK_PROCESSING += 1;
         ((struct args2 *) input)->SUM_TIME_SLEEP += waked - done_encrypt;
         ((struct args2 *) input)->COUNT_SLEEP += 1;
-
     }
     ((struct args2 *) input)->done = 1;
     pthread_exit(NULL);

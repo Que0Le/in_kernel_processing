@@ -108,16 +108,16 @@ static void print_is_in_task(void) {
 static void selective_sleep_in_usec(int type, unsigned long value) {
     switch(type) {
         case 1:
-            msleep(value*1000);
+            msleep((unsigned int) value/1000);
             break;
         case 2:
-            msleep_interruptible(value*1000);
+            msleep_interruptible((unsigned int) value/1000);
             break;
         case 3:
             usleep_range(value, (unsigned long) value*12/10);
             break;
         default:
-            msleep(value*1000);
+            msleep((unsigned int) value/1000);
     } 
 }
 
